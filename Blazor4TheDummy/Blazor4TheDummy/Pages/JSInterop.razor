@@ -1,0 +1,59 @@
+﻿@page "/jsinterop"
+@inject IJSRuntime runtime
+<h1>JSInterop</h1>
+
+<h3>Passing values into JS</h3>
+<button @onclick="alertMe">Howdy</button>
+<input @bind="alertMessage" type="text" />
+<hr />
+
+<h3>Getting values from JS</h3>
+<button @onclick="ShowConfirm">You sure?</button>
+@if (promptResponse ?? false)
+{
+    <span>Well ... ok then, @alertMessage!</span>
+}
+else if (promptResponse.HasValue && !promptResponse.Value)
+{
+    <span>Make up your mind!</span>
+}
+<hr />
+
+<h3>JS calling .Net</h3>
+<button @onclick="GetMeTheOracle">Get me the Oracle, please</button>
+<span>The Oracle wise number is: @jsGenNumber</span>
+<hr />
+
+@code {
+    #region Passing values to JS
+    private string alertMessage { get; set; }
+
+    private async Task alertMe()
+    {
+        await runtime.InvokeVoidAsync("alert", $"Howdy {this.alertMessage}!");
+    }
+    #endregion
+
+    #region Getting values from JS
+    private bool? promptResponse = null;
+    private async Task ShowConfirm()
+    {
+        promptResponse = await runtime.InvokeAsync<bool>("confirm", new[] { "Are you sure?" });
+    }
+    #endregion
+
+    #region JS interacting with .Net
+    private int jsGenNumber = 0;
+    private async Task GetMeTheOracle()
+    {
+        var dotNetReference = DotNetObjectReference.Create(this);
+        await runtime.InvokeVoidAsync("interopHelper2.dontCallUsWeCallU", new[] { dotNetReference });
+    }
+
+    [JSInvokable("JSRandomNumber")]
+    public void TheOracleSays(int value)
+    {
+        this.jsGenNumber = value;
+    }
+    #endregion
+}
